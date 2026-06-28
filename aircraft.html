@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commercial Aircraft Fleet Intelligence Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #0b3c5d;
+            --secondary-color: #328cc1;
+            --accent-color: #d9b310;
+            --bg-light: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-dark: #1d2731;
+            --text-muted: #5e6e7a;
+            --border-color: #e1e8ed;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar navigation styling */
+        #sidebar {
+            width: 360px;
+            background-color: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            box-shadow: 4px 0 15px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .sidebar-header h2 {
+            margin: 0 0 12px 0;
+            font-size: 1.35rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: none;
+            background-color: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 0.9rem;
+            box-sizing: border-box;
+            outline: none;
+            transition: background 0.3s;
+        }
+
+        .search-box::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .search-box:focus {
+            background-color: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Tabs for Quick Filtering */
+        .filter-tabs {
+            display: flex;
+            overflow-x: auto;
+            background: #eef2f5;
+            padding: 6px 10px;
+            gap: 6px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .filter-tab {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            border-radius: 20px;
+            border: none;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-muted);
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .filter-tab.active, .filter-tab:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        /* Scrollable list items */
+        #aircraft-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        #aircraft-list li {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            transition: all 0.2s;
+        }
+
+        #aircraft-list li:hover {
+            background-color: #f0f5fa;
+        }
+
+        #aircraft-list li.selected {
+            background-color: #e2eef7;
+            border-left: 5px solid var(--secondary-color);
+            padding-left: 15px;
+        }
+
+        .list-ac-name {
+            font-weight: 600;
+            color: var(--primary-color);
+            font-size: 0.95rem;
+        }
+
+        .list-ac-cat {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        /* Main details canvas display panel */
+        #content-canvas {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        #placeholder-view {
+            text-align: center;
+            margin-top: 15%;
+            color: var(--text-muted);
+        }
+
+        #placeholder-view svg {
+            width: 80px;
+            height: 80px;
+            fill: #cbd5e1;
+            margin-bottom: 15px;
+        }
+
+        #details-panel {
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.04);
+            max-width: 900px;
+            width: 100%;
+            display: none;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+
+        .hero-image-frame {
+            width: 100%;
+            height: 420px;
+            background-color: #eaeff2;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-image-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.3s ease;
+        }
+
+        .detail-body {
+            padding: 35px;
+        }
+
+        .detail-body h1 {
+            margin: 0 0 8px 0;
+            color: var(--primary-color);
+            font-size: 1.85rem;
+        }
+
+        .detail-category-badge {
+            display: inline-block;
+            background-color: #e2eef7;
+            color: var(--secondary-color);
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 25px;
+        }
+
+        .specs-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .spec-card {
+            background: #f8fafc;
+            padding: 14px 18px;
+            border-radius: 8px;
+            border: 1px solid #edf2f7;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .spec-card.highlight {
+            border-left-color: var(--accent-color);
+        }
+
+        .label {
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            font-weight: 700;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .value {
+            font-size: 0.95rem;
+            color: var(--text-dark);
+            font-weight: 500;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <div class="sidebar-header">
+            <h2>Aircraft Fleet Intelligence</h2>
+            <input type="text" id="searchBar" class="search-box" placeholder="Search fleet models...">
+        </div>
+        
+        <div class="filter-tabs">
+            <button class="filter-tab active" onclick="filterManufacturer('all')">All</button>
+            <button class="filter-tab" onclick="filterManufacturer('airbus')">Airbus</button>
+            <button class="filter-tab" onclick="filterManufacturer('boeing')">Boeing</button>
+            <button class="filter-tab" onclick="filterManufacturer('embraer')">Embraer</button>
+            <button class="filter-tab" onclick="filterManufacturer('atr')">ATR</button>
+            <button class="filter-tab" onclick="filterManufacturer('crj')">CRJ</button>
+        </div>
+
+        <ul id="aircraft-list">
+            </ul>
+    </div>
+
+    <div id="content-canvas">
+        <div id="placeholder-view">
+            <svg viewBox="0 0 24 24">
+                <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L14 19v-5.5l7 2.5z"/>
+            </svg>
+            <h3>No Aircraft Selected</h3>
+            <p>Choose an aircraft model from the left fleet matrix profile directory to query live specifications.</p>
+        </div>
+        
+        <div id="details-panel">
+            <div class="hero-image-frame">
+                <img id="aircraft-pic" src="" alt="Aircraft View Frame">
+            </div>
+            <div class="detail-body">
+                <h1 id="aircraft-title">Model Identifier</h1>
+                <span id="aircraft-badge" class="detail-category-badge">Category Badge</span>
+                
+                <div class="specs-grid">
+                    <div class="spec-card"><span class="label">Engine Asset Stack</span><span id="spec-engines" class="value"></span></div>
+                    <div class="spec-card"><span class="label">Airframe Configuration Dimensions</span><span id="spec-dimensions" class="value"></span></div>
+                    <div class="spec-card highlight"><span class="label">Passenger Transit Speed Configuration</span><span id="spec-speed" class="value"></span></div>
+                    <div class="spec-card highlight"><span class="label">Capacity & Operational Range Envelope</span><span id="spec-capacity" class="value"></span></div>
+                    <div class="spec-card"><span class="label">Historical First Flight Timestamp</span><span id="spec-firstflight" class="value"></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Exhaustive commercial fleet parameters imported from system document database
+        const database = [
+            {
+                name: "Airbus A220-100",
+                mfr: "airbus",
+                category: "Narrowbody Twin-Jet Regional/Mainline",
+                engines: "2 × Pratt & Whitney PW1500G",
+                dimensions: "Length: 35.0 m (114 ft 10 in) | Height: 11.5 m (37 ft 8 in) | Wingspan: 35.10 m",
+                speed: "Mach 0.78 (approx. 515 mph / 829 km/h)",
+                capacity: "100–135 passengers | 3,450 nmi (6,390 km) Range प्रोफाइल",
+                firstFlight: "September 16, 2013 (Originally Bombardier CSeries)"
+            },
+            {
+                name: "Airbus A220-300",
+                mfr: "airbus",
+                category: "Narrowbody Twin-Jet Mainline",
+                engines: "2 × Pratt & Whitney PW1500G",
+                dimensions: "Length: 38.7 m (127 ft 0 in) | Height: 11.5 m (37 ft 8 in) | Wingspan: 35.10 m",
+                speed: "Mach 0.78 (approx. 515 mph / 829 km/h)",
+                capacity: "120–160 passengers | 3,400 nmi (6,297 km)",
+                firstFlight: "February 27, 2015"
+            },
+            {
+                name: "Airbus A300B1",
+                mfr: "airbus",
+                category: "Widebody Twin-Jet (First-generation prototype)",
+                engines: "2 × General Electric CF6-50A",
+                dimensions: "Length: 50.97 m (167 ft 3 in) | Height: 17.5 m (57 ft 5 in) | Wingspan: 44.84 m",
+                speed: "Mach 0.78 (approx. 515 mph / 829 km/h)",
+                capacity: "250–300 passengers | 1,200 nmi (2,220 km)",
+                firstFlight: "October 28, 1972"
+            },
+            {
+                name: "Airbus A300B2 & A300B4",
+                mfr: "airbus",
+                category: "Widebody Twin-Jet Mainliner",
+                engines: "2 × General Electric CF6-50 or Pratt & Whitney JT9D",
+                dimensions: "Length: 53.62 m (175 ft 11 in) | Height: 16.54 m (54 ft 3 in)",
+                speed: "Mach 0.78 (approx. 515 mph / 829 km/h)",
+                capacity: "Optimized center fuel tanks | B4 Extended Range: 2,900 nmi (5,370 km)",
+                firstFlight: "June 28, 1973 (B2) / December 26, 1974 (B4)"
+            },
+            {
+                name: "Airbus A300-600 & A300-600R",
+                mfr: "airbus",
+                category: "Widebody Twin-Jet Cargo/Passenger Carrier",
+                engines: "2 × Pratt & Whitney PW4000 or GE CF6-80C2",
+                dimensions: "Length: 54.08 m (177 ft 5 in) | Height: 16.62 m | Wingspan: 44.84 m",
+                speed: "Mach 0.78 (approx. 515 mph / 829 km/h)",
+                capacity: "266 passengers (2-class) | Extended Range (R): 4,050 nmi (7,500 km)",
+                firstFlight: "July 8, 1983 (600R model: December 9, 1987)"
+            },
+            {
+                name: "Airbus A300-600ST (Beluga)",
+                mfr: "airbus",
+                category: "Outsize Cargo Widebody Twin-Jet Logistics Platform",
+                engines: "2 × General Electric CF6-80C2A8",
+                dimensions: "Length: 56.15 m (184 ft 3 in) | Main Cargo Deck Diameter: 7.10 m",
+                speed: "Mach 0.70 (approx. 460 mph / 740 km/h cruise)",
+                capacity: "51.8 tons of massive oversized outsize components | 2,500 nmi",
+                firstFlight: "September 13, 1994"
+            },
+            {
+                name: "Airbus A310-200 & A310-300",
+                mfr: "airbus",
+                category: "Widebody Twin-Jet Intercontinental",
+                engines: "2 × Pratt & Whitney JT9D/PW4000 or GE CF6-80A/-80C2",
+                dimensions: "Length: 46.66 m | Height: 15.80 m | Wingspan: 43.90 m",
+                speed: "Mach 0.80 (approx. 528 mph / 850 km/h)",
+                capacity: "220 passengers | Long-range transoceanic model: 5,150 nmi (9,540 km)",
+                firstFlight: "April 3, 1982 (-300 Model Variant: July 8, 1985)"
+            },
+            {
+                name: "Airbus A318-100",
+                mfr: "airbus",
+                category: "Narrowbody Twin-Jet Line-Airframer ('Baby Bus')",
+                engines: "2 × CFM International CFM56-5 or Pratt & Whitney PW6000",
+                dimensions: "Length: 31.44 m (103 ft 2 in) | Height: 12.51 m",
+                speed: "Mach 0.78 (approx. 515 mph / 829 km/h)",
+                capacity: "107 passengers | Steep approach certified (London City Airport): 3,100 nmi",
+                firstFlight: "January 15, 2002"
+            },
+            {
+                name: "Airbus A319-100 & A319neo",
+                mfr: "airbus",
+                category: "Narrowbody Twin-Jet Short-to-Medium Route Profile",
+                engines: "2 × CFM56-5 / IAE V2500 (neo: CFM LEAP-1A or PW1100G)",
+                dimensions: "Length: 33.84 m | Wingspan Neo Variant: 35.80 m (117 ft 5 in)",
+                speed: "Mach 0.78 (approx. 515 mph / 829 km/h)",
+                capacity: "124–156 passengers | Upgraded Neo Flight Profile Range: 3,750 nmi",
+                firstFlight: "August 25, 1995 (Advanced neo model: March 31, 2017)"
+            },
+            {
+                name: "Airbus A320-100, A320-200 & A320neo",
+                mfr: "airbus",
+                category: "Narrowbody Twin-Jet Standard Mainline Airframe",
+                engines: "2 × CFM56-5 / IAE V2500 (neo: CFM LEAP-1A or PW1100G)",
+                dimensions: "Length: 37.57 m | Height: 11.76 m | Containerized belly configuration",
+                speed: "Mach 0.78 (approx. 515 mph / 829 km/h)",
+                capacity: "150–180 passengers | Global NEO operational envelope: 3,400 nmi",
+                firstFlight: "February 22, 1987 (-200: Jan 30, 1988; neo: Sept 25, 2014)"
+            },
+            {
+                name: "Airbus A321 Family (Classic & Neo/LR/XLR)",
+                mfr: "airbus",
+                category: "High Capacity Narrowbody Twin-Jet Transatlantic Extended",
+                engines: "2 × CFM56 / V2500 (neo line-up: CFM LEAP-1A or PW1100G)",
+                dimensions: "Length: 44.51 m (146 ft 0 in) | Height: 11.76 m",
+                speed: "Mach 0.78 (approx. 515 mph / 829 km/h)",
+                capacity: "180–240 passengers | Long-Range XLR Structural Rear Tank Profile: 4,700 nmi",
+                firstFlight: "March 11, 1993 (Transatlantic XLR Flight: June 15, 2022)"
+            },
+            {
+                name: "Airbus A330-200 & A330-200F",
+                mfr: "airbus",
+                category: "Widebody Twin-Jet Medium-to-Long Haul Fleet Carrier",
+                engines: "2 × GE CF6-80E1, Pratt & Whitney PW4000, or RR Trent 700",
+                dimensions: "Length: 58.82 m | Dedicated nose-gear blister level deck configuration",
+                speed: "Mach 0.82 (approx. 541 mph / 871 km/h)",
+                capacity: "247 passengers (3-class) | Dedicated Freighter Payload: 71.6 tons | 7,250 nmi",
+                firstFlight: "August 13, 1997 (-200F Structural Line: November 5, 2009)"
+            },
+            {
+                name: "Airbus A330-300",
+                mfr: "airbus",
+                category: "Widebody Twin-Jet High Capacity Platform",
+                engines: "2 × GE CF6-80E1, PW4000, or Rolls-Royce Trent 700",
+                dimensions: "Length: 63.69 m (208 ft 11 in) | Height: 16.83 m",
+                speed: "Mach 0.82 (approx. 541 mph / 871 km/h)",
+                capacity: "277 passengers (3-class configuration) | Long-range capability: 6,350 nmi",
+                firstFlight: "November 2, 1992"
+            },
+            {
+                name: "Airbus A330neo (-800 & -900)",
+                mfr: "airbus",
+                category: "Widebody Twin-Jet NextGen Engine Performance",
+                engines: "2 × Rolls-Royce Trent 7000",
+                dimensions: "Length -800: 58.82 m | Length -900: 64.44 m | Sharklet Composite Wing",
+                speed: "Mach 0.83 (approx. 547 mph / 880 km/h)",
+                capacity: "Ultra Long Range Profile (-800 variant): 8,150 nmi (15,094 km)",
+                firstFlight: "-900 variant: October 19, 2017 | -800 variant: November 6, 2018"
+            },
+            {
+                name: "Airbus A340-200 & A340-300",
+                mfr: "airbus",
+                category: "Widebody Quad-Jet Oceanic Route System",
+                engines: "4 × CFM International CFM56-5C options",
+                dimensions: "Wingspan Structure: 60.30 m (197 ft 10 in) | Shared A330 Framework layout",
+                speed: "Mach 0.82 (approx. 541 mph)",
+                capacity: "250–300 passengers | Bypassed early ETOPS oceanic corridor caps: 7,300 nmi",
+                firstFlight: "Concurrent design cycle platform with twin-engine A330 models"
+            },
+            {
+                name: "Airbus A340-500 & A340-600",
+                mfr: "airbus",
+                category: "Widebody Quad-Jet Heavy Duty Route Framework",
+                engines: "4 × Rolls-Royce Trent 553 (-500) / Trent 556 (-600)",
+                dimensions: "Length -500: 67.93 m | Length -600: 75.36 m (247 ft 3 in)",
+                speed: "Mach 0.83 (approx. 547 mph / 880 km/h)",
+                capacity: "Extended structural range profiles targeted for ultra-long longhaul routes",
+                firstFlight: "-600 model line: April 23, 2001 | -500 model line: February 11, 2002"
+            },
+            {
+                name: "Airbus A350 XWB Family (-900 / -1000 / A350F)",
+                mfr: "airbus",
+                category: "Advanced Widebody Twin-Jet Carbon Composite Airframer",
+                engines: "2 × Rolls-Royce Trent XWB-84 (-900) / Trent XWB-97 (-1000/F)",
+                dimensions: "Length -900: 66.80 m | Length -1000: 73.79 m | A350F Mainline: 70.80 m",
+                speed: "Mach 0.85 (approx. 561 mph / 903 km/h)",
+                capacity: "Ultra-high structural composite performance tracking global long-range route bands",
+                firstFlight: "June 14, 2013 (-1000: Nov 24, 2016; Dedicated A350F Variant: 2025)"
+            },
+            {
+                name: "Boeing 727-100 & Quiet Freighter",
+                mfr: "boeing",
+                category: "Narrowbody Tri-Jet (T-Tail Classic Framework)",
+                engines: "3 × Pratt & Whitney JT8D legacy systems",
+                dimensions: "Wingspan: 32.92 m (108 ft 0 in) | Internal Cabin Width: 3.54 m",
+                speed: "Mach 0.82 (approx. 540 mph / 870 km/h)",
+                capacity: "Pax Belly Decking: ~4.5 tons | Dedicated -100QF System Payload: 21 tons",
+                firstFlight: "February 9, 1963"
+            },
+            {
+                name: "Boeing 727-200 & 200 Advanced",
+                mfr: "boeing",
+                category: "Stretched Narrowbody Tri-Jet Layout",
+                engines: "3 × Pratt & Whitney JT8D-9 / -15 / -17 core configurations",
+                dimensions: "Length Structural Expansion: 46.69 m (153 ft 2 in)",
+                speed: "Mach 0.82 Flight System Envelope Tracking",
+                capacity: "Increased configuration cabin layout optimized for core high density regional flows",
+                firstFlight: "Stretched platform optimization succeeding original 727-100 lines"
+            },
+            {
+                name: "Boeing 737 Original & Classic Series",
+                mfr: "boeing",
+                category: "Narrowbody Twin-Jet Workhorse Array",
+                engines: "2 × P&W JT8D Cigar-Shaped Nacelles / Upgraded CFM56 Options",
+                dimensions: "Length -100: 28.65 m | Length -200: 30.53 m | Classic Wingspan: 28.88 m",
+                speed: "Mach 0.73 (-100 Line) up to Mach 0.74 (-200 Series)",
+                capacity: "Pioneered two-pilot flight deck profiles | Range Matrix: 1,900 to 2,600 nmi",
+                firstFlight: "April 9, 1967 (-200 launch program baseline: August 8, 1967)"
+            },
+            {
+                name: "Boeing 737 MAX 7 & MAX 8",
+                mfr: "boeing",
+                category: "NextGen Efficient Narrowbody Twin-Jet Platform",
+                engines: "2 × CFM International LEAP-1B systems",
+                dimensions: "Wingspan Structural Matrix: 35.92 m (117 ft 10 in)",
+                speed: "Mach 0.79 System Target Range Dynamics",
+                capacity: "MAX 7 Extended Range Track: 3,850 nmi | MAX 8 Baseline Track: 3,550 nmi",
+                firstFlight: "Advanced highly efficient updated narrowbody production block profile"
+            },
+            {
+                name: "Boeing 737 MAX 9 & MAX 10",
+                mfr: "boeing",
+                category: "Extended Capacity Narrowbody Twin-Jet System",
+                engines: "2 × CFM International LEAP-1B units",
+                dimensions: "Length MAX 9: 42.16 m | Length MAX 10: 43.76 m (143 ft 7 in)",
+                speed: "Mach 0.79 (approx. 522 mph / 840 km/h)",
+                capacity: "MAX 9 Deck System: ~7.8 tons | MAX 10 Deck System Volume: ~8.5 tons",
+                firstFlight: "April 13, 2017 (Stretched MAX 10 structural layout: June 18, 2021)"
+            },
+            {
+                name: "Boeing 747-100 & 747SP",
+                mfr: "boeing",
+                category: "Widebody Quad-Jet Double-Deck Icon / Shortened Performance",
+                engines: "4 × P&W JT9D or Rolls-Royce RB211 configuration matrix options",
+                dimensions: "Wingspan Array: 59.60 m | Main Lower Deck Width Vector: 6.10 m",
+                speed: "Classic high speed cruise capability mapping long haul bands",
+                capacity: "Shortened Performance SP: 6,650 nmi | Standard -100 Trunk Range: 4,620 nmi",
+                firstFlight: "Original 1969 platform launch cycle (Performance SP follow-on: 1975)"
+            },
+            {
+                name: "Boeing 747-200 & 747-300",
+                mfr: "boeing",
+                category: "Long-Range Widebody Quad-Jet Variant Series",
+                engines: "4 × Pratt & Whitney JT9D / GE CF6 / Rolls-Royce RB211 options",
+                dimensions: "Length Stretched Body: 70.66 m | Height: 19.33 m | Early short upper deck layout",
+                speed: "High sub-sonic heavy transport envelope metrics",
+                capacity: "Enhanced fuel tanks & structurally optimized upper passenger lounges",
+                firstFlight: "October 11, 1970 baseline tracking entry"
+            },
+            {
+                name: "Boeing 747-400 & 747-400F",
+                mfr: "boeing",
+                category: "Widebody Quad-Jet Digitized Flight Deck Platform",
+                engines: "4 × High-bypass turbofan engines | Extended structural winglets",
+                dimensions: "Length Standard Deck: 70.66 m | Height Vector: 19.41 m",
+                speed: "Mach 0.855 (approx. 565 mph / 912 km/h)",
+                capacity: "Freighter Nose Loaders: 124.3 tons capacity | -400ER Range Layer: 63,705 US gal",
+                firstFlight: "April 29, 1988 (-400F Nose Cargo Platform: May 4, 1993)"
+            },
+            {
+                name: "Boeing 777 Long-Range Series (-200LR / -300ER / 777F)",
+                mfr: "boeing",
+                category: "Heavy Widebody Twin-Jet Global Longhaul Platform",
+                engines: "2 × General Electric GE90-110B1 (-200LR) / GE90-115B (-300ER/777F)",
+                dimensions: "Length -200LR/777F: 63.73 m | Length -300ER Mainline: 73.86 m",
+                speed: "Mach 0.84 (approx. 554 mph / 892 km/h)",
+                capacity: "777F Deck Volume: 112.4 tons cargo | Worldliner -200LR Track: Ultra Long Range",
+                firstFlight: "February 24, 2003 (-200LR: March 2005; Dedicated Freighter: July 14, 2008)"
+            },
+            {
+                name: "Boeing 777X Family (777-8 & 777-9)",
+                mfr: "boeing",
+                category: "NextGen Widebody Twin-Jet Folding Wingtip Architecture",
+                engines: "2 × General Electric GE9X high efficiency exclusives (~105,000 lbf)",
+                dimensions: "In-Flight Unfolded Wingspan: 71.75 m | Ground Folded Clearance: 64.85 m",
+                speed: "Advanced long range cruise performance efficiency maps",
+                capacity: "-8 Model Range Vector: 8,730 nmi | Stretched -9 Model Range Vector: 7,285 nmi",
+                firstFlight: "Active flight certification testing phase framework"
+            },
+            {
+                name: "Boeing 787 Dreamliner (-8 / -9 / -10)",
+                mfr: "boeing",
+                category: "Composite Architecture Widebody Twin-Jet Efficiency Array",
+                engines: "2 × General Electric GEnx-1B or Rolls-Royce Trent 1000",
+                dimensions: "Length -8: 56.69 m | Length -9: 62.81 m | Length -10 Extension: 68.28 m",
+                speed: "Advanced high-efficiency long-haul composite transit parameters",
+                capacity: "Optimized bleedless engine architecture | Scaled range matrix matching global routes",
+                firstFlight: "December 15, 2009 (-9 Series: Sept 17, 2013)"
+            },
+            {
+                name: "Embraer ERJ 135 & ERJ 140",
+                mfr: "embraer",
+                category: "Narrowbody Twin-Jet Regional Network Platform",
+                engines: "2 × Rolls-Royce AE 3007A power systems",
+                dimensions: "Length Vector: 26.33 m / 28.45 m | Height Element: 6.76 m",
+                speed: "Mach 0.78 (approx. 515 mph / 829 km/h)",
+                capacity: "Optimized regional system feeder | Low fuel burn tracking: ~1,000 kg/h",
+                firstFlight: "July 4, 1995 (ERJ 135 model system launch: June 27, 2000)"
+            },
+            {
+                name: "Embraer E-Jets (E170 & E175)",
+                mfr: "embraer",
+                category: "Narrowbody Twin-Jet Regional Hub Feeder Network",
+                engines: "2 × General Electric CF34-8E turbofans",
+                dimensions: "Length E170: 29.90 m | Length E175: 31.68 m (103 ft 11 in)",
+                speed: "Mach 0.75 to 0.82 (approx. 541 mph max cruise speed profile)",
+                capacity: "Mainline regional feeder layouts | ~1.8 tons underfloor belly cargo systems",
+                firstFlight: "February 19, 2002 (E175 stretched variant launch: June 14, 2003)"
+            },
+            {
+                name: "ATR 72-600 & ATR 72-600F",
+                mfr: "atr",
+                category: "Regional Turboprop Fleet Assembly",
+                engines: "Pratt & Whitney Canada PW127 series turboprops",
+                dimensions: "High wingspan configuration layout optimized for short regional field hops",
+                speed: "Max Cruise: 310 knots (approx. 356 mph / 574 km/h)",
+                capacity: "68–78 passengers | Structural Dedicated -600F Freight Matrix: 9.8 tons | 825 nmi",
+                firstFlight: "Advanced glass cockpit configuration upgrade line tracking"
+            },
+            {
+                name: "CRJ1000 / NextGen",
+                mfr: "crj",
+                category: "Narrowbody Twin-Jet Regional Flight Corridor Optimization",
+                engines: "2 × General Electric CF34-8C5A1 units",
+                dimensions: "Length: 39.10 m (128 ft 3 in) | Height Profile Clearance: 7.51 m",
+                speed: "Mach 0.80 (approx. 528 mph / 850 km/h)",
+                capacity: "100–104 passengers | High density corridor asset layout: 1,650 nmi range",
+                firstFlight: "September 3, 2008 (Note: Program assets integrated via MHI in 2020)"
+            }
+        ];
+
+        const listContainer = document.getElementById('aircraft-list');
+        const detailsPanel = document.getElementById('details-panel');
+        const placeholderView = document.getElementById('placeholder-view');
+        const searchBar = document.getElementById('searchBar');
+
+        let currentManufacturerFilter = 'all';
+
+        // Render the full directory array to panel UI
+        function renderList() {
+            listContainer.innerHTML = '';
+            const query = searchBar.value.toLowerCase().trim();
+
+            database.forEach((ac, idx) => {
+                // Apply Search & Manufacturer tabs filters simultaneously
+                const matchesMfr = currentManufacturerFilter === 'all' || ac.mfr === currentManufacturerFilter;
+                const matchesSearch = ac.name.toLowerCase().includes(query) || ac.category.toLowerCase().includes(query);
+
+                if (matchesMfr && matchesSearch) {
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span class="list-ac-name">${ac.name}</span>
+                        <span class="list-ac-cat">${ac.category}</span>
+                    `;
+                    li.setAttribute('data-index', idx);
+                    li.addEventListener('click', () => showDetails(idx, li));
+                    listContainer.appendChild(li);
+                }
+            });
+        }
+
+        // Display individual aircraft details view panel
+        function showDetails(index, selectedElement) {
+            const ac = database[index];
+            
+            // Manage dynamic tracking selection highlight rings
+            document.querySelectorAll('#aircraft-list li').forEach(el => el.classList.remove('selected'));
+            selectedElement.classList.add('selected');
+
+            placeholderView.style.display = 'none';
+            detailsPanel.style.display = 'block';
+
+            // Swap values inside information cells
+            document.getElementById('aircraft-title').textContent = ac.name;
+            document.getElementById('aircraft-badge').textContent = ac.category;
+            document.getElementById('spec-engines').textContent = ac.engines;
+            document.getElementById('spec-dimensions').textContent = ac.dimensions;
+            document.getElementById('spec-speed').textContent = ac.speed;
+            document.getElementById('spec-capacity').textContent = ac.capacity;
+            document.getElementById('spec-firstflight').textContent = ac.firstFlight;
+
+            // Compute dynamic aviation imagery assets using LoremFlickr keyword tags pipelines
+            const queryKeyword = ac.name.split(' ')[0].toLowerCase(); // Pull core branding word
+            const imageAssetUrl = `https://loremflickr.com/900/420/airplane,${encodeURIComponent(ac.name)}?random=${index}`;
+            
+            const picNode = document.getElementById('aircraft-pic');
+            picNode.style.opacity = '0.3'; // Fade effect during dynamic load shifts
+            picNode.src = imageAssetUrl;
+            picNode.onload = () => { picNode.style.opacity = '1'; };
+        }
+
+        // Handle category tab updates
+        function filterManufacturer(mfrName) {
+            currentManufacturerFilter = mfrName;
+            document.querySelectorAll('.filter-tab').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            renderList();
+        }
+
+        // Live typing logic updates
+        searchBar.addEventListener('input', renderList);
+
+        // Bootstrap load sequence init
+        renderList();
+    </script>
+</body>
+</html>
