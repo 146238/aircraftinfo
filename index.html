@@ -471,6 +471,16 @@
                 firstFlight: "June 14, 2013 (-1000: Nov 24, 2016; Dedicated A350F Variant: 2025)"
             },
             {
+    "name": "Airbus A380-800",
+    "mfr": "airbus",
+    "category": "Widebody Quad-Jet Ultra-Long-Range Double-Decker",
+    "engines": "4 × Engine Alliance GP7200 or Rolls-Royce Trent 900 units",
+    "dimensions": "Length: 72.72 m (238 ft 7 in) | Height Profile Clearance: 24.09 m",
+    "speed": "Mach 0.85 (approx. 561 mph / 903 km/h)",
+    "capacity": "400–853 passengers (typically ~525) | Ultra-long haul double-deck layout: 8,000 nmi range",
+    "firstFlight": "April 27, 2005"
+  },
+            {
                 name: "Boeing 727-100 & Quiet Freighter",
                 mfr: "boeing",
                 category: "Narrowbody Tri-Jet (T-Tail Classic Framework)",
@@ -550,6 +560,26 @@
                 capacity: "Freighter Nose Loaders: 124.3 tons capacity | -400ER Range Layer: 63,705 US gal",
                 firstFlight: "April 29, 1988 (-400F Nose Cargo Platform: May 4, 1993)"
             },
+              {
+    "name": "Boeing 757-200",
+    "mfr": "boeing",
+    "category": "Narrowbody Twin-Jet Medium-to-Long Range",
+    "engines": "2 × Rolls-Royce RB211 or Pratt & Whitney PW2000 units",
+    "dimensions": "Length: 47.32 m (155 ft 3 in) | Height Profile Clearance: 13.56 m",
+    "speed": "Mach 0.80 (approx. 528 mph / 850 km/h)",
+    "capacity": "200–239 passengers | Standard layout: 3,900 nmi range",
+    "firstFlight": "February 19, 1982"
+  },
+  {
+    "name": "Boeing 767-300ER",
+    "mfr": "boeing",
+    "category": "Widebody Twin-Jet Medium-to-Long Range",
+    "engines": "2 × General Electric CF6, Pratt & Whitney PW4000, or Rolls-Royce RB211 units",
+    "dimensions": "Length: 54.94 m (180 ft 3 in) | Height Profile Clearance: 15.85 m",
+    "speed": "Mach 0.80 (approx. 528 mph / 850 km/h)",
+    "capacity": "210–269 passengers | Extended range layout: 5,980 nmi range",
+    "firstFlight": "December 19, 1986"
+  },      
             {
                 name: "Boeing 777 Long-Range Series (-200LR / -300ER / 777F)",
                 mfr: "boeing",
@@ -653,35 +683,27 @@
         }
 
         // Display individual aircraft details view panel
-        function showDetails(index, selectedElement) {
-            const ac = database[index];
-            
-            // Manage dynamic tracking selection highlight rings
-            document.querySelectorAll('#aircraft-list li').forEach(el => el.classList.remove('selected'));
-            selectedElement.classList.add('selected');
+       // Display individual aircraft details view panel
+// Display individual aircraft details view panel
+// Display individual aircraft details view panel
+function showDetails(index, selectedElement) {
+    const ac = database[index];
+    
+    document.querySelectorAll('#aircraft-list li').forEach(el => el.classList.remove('selected'));
+    selectedElement.classList.add('selected');
 
-            placeholderView.style.display = 'none';
-            detailsPanel.style.display = 'block';
+    placeholderView.style.display = 'none';
+    detailsPanel.style.display = 'block';
 
-            // Swap values inside information cells
-            document.getElementById('aircraft-title').textContent = ac.name;
-            document.getElementById('aircraft-badge').textContent = ac.category;
-            document.getElementById('spec-engines').textContent = ac.engines;
-            document.getElementById('spec-dimensions').textContent = ac.dimensions;
-            document.getElementById('spec-speed').textContent = ac.speed;
-            document.getElementById('spec-capacity').textContent = ac.capacity;
-            document.getElementById('spec-firstflight').textContent = ac.firstFlight;
-
-            // Compute dynamic aviation imagery assets using LoremFlickr keyword tags pipelines
-            const queryKeyword = ac.name.split(' ')[0].toLowerCase(); // Pull core branding word
-            const imageAssetUrl = `https://loremflickr.com/900/420/airplane,${encodeURIComponent(ac.name)}?random=${index}`;
-            
-            const picNode = document.getElementById('aircraft-pic');
-            picNode.style.opacity = '0.3'; // Fade effect during dynamic load shifts
-            picNode.src = imageAssetUrl;
-            picNode.onload = () => { picNode.style.opacity = '1'; };
-        }
-
+    // Populate the text fields exclusively
+    document.getElementById('aircraft-title').textContent = ac.name;
+    document.getElementById('aircraft-badge').textContent = ac.category;
+    document.getElementById('spec-engines').textContent = ac.engines;
+    document.getElementById('spec-dimensions').textContent = ac.dimensions;
+    document.getElementById('spec-speed').textContent = ac.speed;
+    document.getElementById('spec-capacity').textContent = ac.capacity;
+    document.getElementById('spec-firstflight').textContent = ac.firstFlight;
+}
         // Handle category tab updates
         function filterManufacturer(mfrName) {
             currentManufacturerFilter = mfrName;
